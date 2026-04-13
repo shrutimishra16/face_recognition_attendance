@@ -32,8 +32,8 @@ def mark_attendance(name):
             VALUES (?, ?, ?, ?)
         """, (name, date, time, "Present"))
         conn.commit()
-        print(f"{name} marked present")
+        return f"{name} marked present"
     else:
-        print(f"{name} already marked today")
+        return f"{name} already marked today"
 
     conn.close()

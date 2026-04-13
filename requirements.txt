@@ -5,4 +5,4 @@ opencv-python
 face_recognition
 numpy
 pyodbc
-
+flask

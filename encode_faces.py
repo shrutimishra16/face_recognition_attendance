@@ -2,38 +2,55 @@ import face_recognition
 import os
 import pickle
 
-dataset_path = "datasets"
+def generate_encodings():
+    dataset_path = "datasets"
 
-known_encodings = []
-known_names = []
+    if os.path.exists("encodings.pkl"):
+        with open("encodings.pkl", "rb") as f:
+            data = pickle.load(f)
+        known_encodings = data["encodings"]
+        known_names = data["names"]
+        print("Loaded existing encodings...")
+    else:
+        known_encodings = []
+        known_names = []
+        print("No existing encodings found. Creating new...")
 
-print("Encoding faces...")
+    print("Checking for new faces...")
 
-for file in os.listdir(dataset_path):
+    for file in os.listdir(dataset_path):
 
-    img_path = os.path.join(dataset_path, file)
+        if file.startswith(".") or not file.lower().endswith((".jpg", ".jpeg", ".png")):
+            continue
 
-    image = face_recognition.load_image_file(img_path)
+        name = file.split(".")[0]
 
-    encodings = face_recognition.face_encodings(image)
+        if name in known_names:
+            continue
 
-    if len(encodings) > 0:
-        encoding = encodings[0]
+        img_path = os.path.join(dataset_path, file)
+        image = face_recognition.load_image_file(img_path)
 
-        name = file.split(".")[0]  # filename = name
+        encodings = face_recognition.face_encodings(image)
 
-        known_encodings.append(encoding)
-        known_names.append(name)
+        if len(encodings) > 0:
+            encoding = encodings[0]
 
-        print(f"Encoded {name}")
+            known_encodings.append(encoding)
+            known_names.append(name)
 
-# Save encodings
-data = {
-    "encodings": known_encodings,
-    "names": known_names
-}
+            print(f"New face encoded: {name}")
 
-with open("encodings.pkl", "wb") as f:
-    pickle.dump(data, f)
+    data = {
+        "encodings": known_encodings,
+        "names": known_names
+    }
 
-print("Done! Encodings saved.")
+    with open("encodings.pkl", "wb") as f:
+        pickle.dump(data, f)
+
+    print("Encodings updated successfully!")
+
+
+if __name__ == "__main__":
+    generate_encodings()

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Recognition Attendance</title>
+</head>
+<body>
+
+    <h1>Face Recognition Attendance System</h1>
+
+    <!-- Live Camera -->
+    <img src="{{ url_for('video') }}" width="600">
+
+    <!-- Attendance Message -->
+    <h2 id="message" style="color: green;">Waiting for face detection...</h2>
+
+    <script>
+        function updateMessage() {
+            fetch('/get_message')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.message) {
+                        document.getElementById("message").innerText = data.message;
+                    }
+                });
+        }
+
+        setInterval(updateMessage, 500);
+    </script>
+
+</body>
+</html>
