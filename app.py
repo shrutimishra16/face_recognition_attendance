@@ -1,10 +1,11 @@
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 import cv2
 import face_recognition
 import pickle
 import numpy as np
 import os
 import time
+import base64
 
 from encode_faces import generate_encodings
 from database import mark_attendance
@@ -106,5 +107,45 @@ def get_message():
     return jsonify({"message": attendance_message})
 
 
+@app.route('/api/recognize', methods=['POST'])
+def recognize_face():
+    data = request.get_json()
+    if not data or 'image' not in data:
+        return jsonify({"error": "Missing 'image' field (base64 encoded)"}), 400
+
+    try:
+        img_bytes = base64.b64decode(data['image'])
+        np_arr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        if frame is None:
+            return jsonify({"error": "Could not decode image"}), 400
+    except Exception:
+        return jsonify({"error": "Invalid base64 image"}), 400
+
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    face_locations = face_recognition.face_locations(rgb_frame)
+    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+    if not face_encodings:
+        return jsonify({"message": "No face detected", "results": []})
+
+    results = []
+    for face_encoding in face_encodings:
+        matches = face_recognition.compare_faces(known_encodings, face_encoding)
+        distances = face_recognition.face_distance(known_encodings, face_encoding)
+        name = "Unknown"
+        attendance_status = None
+
+        if len(distances) > 0:
+            best_match = np.argmin(distances)
+            if matches[best_match]:
+                name = known_names[best_match]
+                attendance_status = mark_attendance(name)
+
+        results.append({"name": name, "status": attendance_status})
+
+    return jsonify({"message": f"{len(results)} face(s) processed", "results": results})
+
+
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=True, port=8000, use_reloader=False)
