@@ -5,7 +5,6 @@ import pickle
 import numpy as np
 import os
 import time
-import base64
 
 from encode_faces import generate_encodings
 from database import mark_attendance
@@ -109,18 +108,15 @@ def get_message():
 
 @app.route('/api/recognize', methods=['POST'])
 def recognize_face():
-    data = request.get_json()
-    if not data or 'image' not in data:
-        return jsonify({"error": "Missing 'image' field (base64 encoded)"}), 400
+    if 'image' not in request.files:
+        return jsonify({"error": "Missing 'image' file in form-data"}), 400
 
-    try:
-        img_bytes = base64.b64decode(data['image'])
-        np_arr = np.frombuffer(img_bytes, np.uint8)
-        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        if frame is None:
-            return jsonify({"error": "Could not decode image"}), 400
-    except Exception:
-        return jsonify({"error": "Invalid base64 image"}), 400
+    file = request.files['image']
+    img_bytes = file.read()
+    np_arr = np.frombuffer(img_bytes, np.uint8)
+    frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    if frame is None:
+        return jsonify({"error": "Could not decode image"}), 400
 
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     face_locations = face_recognition.face_locations(rgb_frame)
