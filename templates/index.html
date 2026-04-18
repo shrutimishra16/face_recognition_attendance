@@ -1,31 +1,385 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Face Recognition Attendance</title>
+    <title>Smart Bus Attendance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f1f5f9; }
+
+        /* NAVBAR */
+        .navbar {
+            background: #0a2472; padding: 0 24px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
+        .nav-logo {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 17px; color: #fff; flex-shrink: 0;
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.3);
+        }
+        .nav-brand-text { line-height: 1.2; }
+        .nav-brand-text .school { font-weight: 700; font-size: 14px; color: #fff; }
+        .nav-brand-text .sub { font-size: 10px; color: #93c5fd; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav-links { display: flex; align-items: center; gap: 4px; }
+        .nav-links span {
+            color: #cbd5e1; background-color: #0a2472; font-size: 13px; font-weight: 500;
+            padding: 6px 13px; border-radius: 10px; cursor: pointer; white-space: nowrap;
+            display: flex; align-items: center; gap: 6px;
+            transition: background 0.18s, color 0.18s;
+        }
+        .nav-links span:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .nav-links span.active { background: #f59e0b; color: #1a1a1a; font-weight: 700; }
+        .hamburger {
+            display: none; flex-direction: column; gap: 5px;
+            cursor: pointer; padding: 4px; flex-shrink: 0;
+        }
+        .hamburger span { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; }
+        .nav-links.open {
+            display: flex !important; flex-direction: column; align-items: flex-start;
+            position: absolute; top: 62px; left: 0; right: 0;
+            background: #0a2472; padding: 12px 16px 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 99;
+        }
+        .nav-links.open span { width: 100%; padding: 10px 12px; font-size: 14px; }
+
+        /* MAIN LAYOUT */
+        .main {
+            display: flex; padding: 15px; gap: 15px;
+            height: calc(100vh - 62px); overflow: hidden;
+            max-width: 1000px; margin: 0 auto; padding-top: 24px;
+        }
+        .left, .right {
+            flex: 0 0 calc(50% - 8px); width: calc(50% - 8px);
+            display: flex; flex-direction: column; gap: 12px;
+        }
+
+        /* CARDS */
+        .card { background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); overflow: hidden; }
+        .card-header {
+            background: #0a2472; color: white; padding: 10px 15px;
+            font-size: 14px; font-weight: bold; display: flex; justify-content: space-between;
+        }
+        .card-body { padding: 10px; }
+        .section-label {
+            font-size: 11px; font-weight: 700; color: #0a2472;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+        }
+        .section-label::after { content: ''; flex: 1; height: 1px; background: #cbd5e1; }
+
+        /* CAMERA */
+        .camera-nav { background-color: #f59e0b; color: black; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .camera-card { min-height: 520px; display: flex; flex-direction: column; }
+        .camera-viewport { position: relative; background: #0a0a0a; overflow: hidden; flex: 1; }
+        video { width: 100%; height: 100%; max-height: none; object-fit: cover; display: block; }
+        canvas#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .corner { position: absolute; width: 20px; height: 20px; z-index: 3; }
+        .corner.tl { top: 10px; left: 10px; border-top: 3px solid #fbbf24; border-left: 3px solid #fbbf24; }
+        .corner.tr { top: 10px; right: 10px; border-top: 3px solid #fbbf24; border-right: 3px solid #fbbf24; }
+        .corner.bl { bottom: 10px; left: 10px; border-bottom: 3px solid #fbbf24; border-left: 3px solid #fbbf24; }
+        .corner.br { bottom: 10px; right: 10px; border-bottom: 3px solid #fbbf24; border-right: 3px solid #fbbf24; }
+        .scan-line {
+            position: absolute; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #fbbf24, transparent);
+            z-index: 5; animation: scan-move 2.5s linear infinite;
+        }
+        @keyframes scan-move { 0%{top:10%} 100%{top:90%} }
+        .oval-guide { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 4; pointer-events: none; }
+        .camera-viewport::after {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse 55% 65% at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%);
+            z-index: 3; pointer-events: none;
+        }
+        .oval { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); border-radius: 50%; border-style: solid; }
+        .oval-1 { width: 150px; height: 190px; border-width: 2.5px; border-color: rgba(251,191,36,0.95); box-shadow: 0 0 14px rgba(251,191,36,0.5); animation: oval-pulse 2s ease-in-out infinite; }
+        .oval-2 { width: 178px; height: 224px; border-width: 1.5px; border-color: rgba(251,191,36,0.55); animation: oval-pulse 2s ease-in-out infinite 0.3s; }
+        .oval-3 { width: 206px; height: 258px; border-width: 1px; border-color: rgba(251,191,36,0.28); animation: oval-pulse 2s ease-in-out infinite 0.6s; }
+        @keyframes oval-pulse { 0%,100%{opacity:0.7} 50%{opacity:1} }
+        .oval-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 6px; height: 6px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.9); }
+        .oval-cross-h, .oval-cross-v { position: absolute; top: 50%; left: 50%; background: rgba(251,191,36,0.25); }
+        .oval-cross-h { width: 60px; height: 1px; transform: translate(-50%,-50%); }
+        .oval-cross-v { width: 1px; height: 60px; transform: translate(-50%,-50%); }
+        .scan-status { text-align: center; padding: 8px; background: #0a2472; color: #fbbf24; font-size: 14px; }
+
+        /* SCAN BUTTON */
+        .scan-controls { display: flex; align-items: center; justify-content: center; padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .btn-scan-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 28px; border: none; border-radius: 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.1s; letter-spacing: 0.04em; }
+        .btn-scan-toggle:active { transform: scale(0.97); }
+        .btn-scan-toggle.running { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; }
+        .btn-scan-toggle.stopped { background: #0a2472; color: #fff; border: 1.5px solid #0a2472; }
+        .btn-scan-toggle .btn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .btn-scan-toggle.running .btn-dot { background: #ef4444; animation: blink 1s infinite; }
+        .btn-scan-toggle.stopped .btn-dot { background: #22c55e; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* STATUS */
+        #status-bar { padding: 7px 10px; border-radius: 6px; font-size: 13px; margin-bottom: 10px; }
+        .waiting { background: #e2e8f0; color: #475569; }
+        .success { background: #bbf7d0; color: #15803d; }
+        .unknown { background: #fecaca; color: #b91c1c; }
+        .mixed   { background: #fde68a; color: #92400e; }
+
+        /* RECOGNITION */
+        #recognition-body { padding: 16px 12px; min-height: 270px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+        .rec-placeholder { color: #94a3b8; font-size: 13px; text-align: center; }
+        .rec-photo-ring { width: 96px; height: 96px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 0 0 4px rgba(34,197,94,0.18); flex-shrink: 0; }
+        .rec-photo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+        .rec-name { font-size: 15px; font-weight: 700; color: #0f172a; text-align: center; margin-top: 2px; }
+        .rec-conf-wrap { width: 100%; padding: 0 8px; }
+        .rec-conf-label { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 4px; }
+        .rec-conf-label span:last-child { color: #16a34a; }
+        .rec-conf-track { height: 7px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+        .rec-conf-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #16a34a); border-radius: 99px; transition: width 0.4s ease; }
+        .rec-status { font-size: 12px; font-weight: 600; padding: 3px 12px; border-radius: 20px; margin-top: 2px; }
+        .rec-status.known  { background: #dcfce7; color: #15803d; }
+        .rec-status.unknown { background: #fee2e2; color: #b91c1c; }
+        #face-list { display: none; }
+
+        /* BUS MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .modal { background: white; border-radius: 12px; padding: 30px 28px; width: 320px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); text-align: center; }
+        .modal h3 { margin: 0 0 6px; color: #0a2472; font-size: 18px; }
+        .modal p { margin: 0 0 18px; color: #64748b; font-size: 13px; }
+        .modal input { width: 100%; padding: 10px 12px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; text-align: center; outline: none; box-sizing: border-box; letter-spacing: 2px; text-transform: uppercase; }
+        .modal input:focus { border-color: #1e3a8a; }
+        .modal button { margin-top: 16px; width: 100%; padding: 10px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; }
+        .modal button:hover { background: #1e40af; }
+        .bus-badge { display: inline-flex; align-items: center; background: #f59e0b; color: #1a1a1a; font-weight: 700; font-size: 11px; padding: 2px 9px; border-radius: 20px; margin-top: 4px; }
+        #boarding-log div { padding: 6px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+
+        /* MOBILE */
+        @media (max-width: 640px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
+            .main { flex-direction: column; height: auto; overflow: visible; padding: 10px; gap: 10px; padding-top: 10px; }
+            .left, .right { flex: 0 0 100%; width: 100%; gap: 10px; }
+            .section-label { width: 100%; }
+            .camera-card { min-height: unset; }
+            .camera-viewport { flex: none; height: 260px; }
+            video { height: 100%; max-height: 260px; }
+            #recognition-body { min-height: 180px; }
+            .btn-scan-toggle { padding: 12px 36px; font-size: 14px; }
+            .modal { width: calc(100vw - 40px); padding: 24px 20px; box-sizing: border-box; }
+            .modal input { font-size: 18px; padding: 12px; }
+            .modal button { padding: 14px; font-size: 16px; }
+        }
+    </style>
 </head>
 <body>
 
-    <h1>Face Recognition Attendance System</h1>
+<!-- BUS NUMBER MODAL -->
+<div class="modal-overlay" id="bus-modal">
+    <div class="modal">
+        <h3>🚌 Enter Bus Number</h3>
+        <p>Please enter the bus number before starting the scan</p>
+        <input id="bus-input" type="text" placeholder="e.g. BUS-07" maxlength="10" />
+        <button onclick="confirmBusNo()">Start Scan</button>
+    </div>
+</div>
 
-    <!-- Live Camera -->
-    <img src="{{ url_for('video') }}" width="600">
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="nav-brand">
+        <div class="nav-logo">G</div>
+        <div class="nav-brand-text">
+            <div class="school">Gyanshree School</div>
+            <div class="sub">Smart Bus Attendance</div>
+        </div>
+    </div>
+    <div class="nav-links" id="nav-links">
+        <span onclick="window.location.href='/'">Home</span>
+        <span onclick="window.location.href='/enroll'">Enroll Student</span>
+        <span class="active">Bus Scan</span>
+        <span onclick="window.location.href='/records'">Records</span>
+    </div>
+    <div class="hamburger" id="hamburger" onclick="toggleNav()">
+        <span></span><span></span><span></span>
+    </div>
+</div>
 
-    <!-- Attendance Message -->
-    <h2 id="message" style="color: green;">Waiting for face detection...</h2>
+<div class="main">
+    <!-- LEFT -->
+    <div class="left">
+        <div class="section-label">Camera Feed</div>
+        <div class="card camera-card">
+            <div class="card-header">
+                <div>
+                    <div>BUS ENTRY CAMERA</div>
+                    <span id="bus-badge" class="bus-badge" style="display:none"></span>
+                </div>
+                <span class="camera-nav">Auto Scan</span>
+            </div>
+            <div class="camera-viewport">
+                <div class="corner tl"></div><div class="corner tr"></div>
+                <div class="corner bl"></div><div class="corner br"></div>
+                <div class="scan-line" id="scan-line"></div>
+                <div class="oval-guide">
+                    <div class="oval oval-3"></div>
+                    <div class="oval oval-2"></div>
+                    <div class="oval oval-1"></div>
+                    <div class="oval-cross-h"></div>
+                    <div class="oval-cross-v"></div>
+                    <div class="oval-dot"></div>
+                </div>
+                <video id="video" autoplay playsinline></video>
+                <canvas id="overlay"></canvas>
+            </div>
+            <div class="scan-status" id="scan-status-bar">Scan Active</div>
+            <div class="scan-controls">
+                <button class="btn-scan-toggle running" id="btn-toggle" onclick="toggleScan()">
+                    <span class="btn-dot"></span> Stop Scanning
+                </button>
+            </div>
+        </div>
+    </div>
 
-    <script>
-        function updateMessage() {
-            fetch('/get_message')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.message) {
-                        document.getElementById("message").innerText = data.message;
-                    }
-                });
+    <!-- RIGHT -->
+    <div class="right">
+        <div class="section-label">Identification Result</div>
+        <div class="card">
+            <div class="card-header">STUDENT RECOGNITION</div>
+            <div class="card-body" style="padding:10px 10px 6px;">
+                <div id="status-bar" class="waiting">Waiting for face detection...</div>
+            </div>
+            <div id="recognition-body">
+                <div class="rec-placeholder">👤<br>No student detected yet</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">BOARDING LOG</div>
+            <div class="card-body">
+                <div id="boarding-log"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+const video       = document.getElementById('video');
+const canvas      = document.getElementById('canvas');
+const overlay     = document.getElementById('overlay');
+const overlayCtx  = overlay.getContext('2d');
+const statusBar   = document.getElementById('status-bar');
+const boardingLog = document.getElementById('boarding-log');
+
+let logEntries = [], busNo = '', scanning = true;
+
+function toggleNav() {
+    document.getElementById('nav-links').classList.toggle('open');
+}
+
+function toggleScan() {
+    scanning = !scanning;
+    const btn = document.getElementById('btn-toggle');
+    const sb  = document.getElementById('scan-status-bar');
+    const sl  = document.getElementById('scan-line');
+    if (scanning) {
+        btn.className = 'btn-scan-toggle running';
+        btn.innerHTML = '<span class="btn-dot"></span> Stop Scanning';
+        sb.textContent = 'Scan Active';
+        sl.style.animationPlayState = 'running';
+    } else {
+        btn.className = 'btn-scan-toggle stopped';
+        btn.innerHTML = '<span class="btn-dot"></span> Start Scanning';
+        sb.textContent = 'Scan Paused';
+        sl.style.animationPlayState = 'paused';
+        overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+    }
+}
+
+function confirmBusNo() {
+    const val = document.getElementById('bus-input').value.trim().toUpperCase();
+    if (!val) { alert('Please enter a bus number.'); return; }
+    busNo = val;
+    document.getElementById('bus-modal').style.display = 'none';
+    document.getElementById('bus-badge').textContent = 'Bus: ' + busNo;
+    document.getElementById('bus-badge').style.display = 'inline-block';
+}
+document.getElementById('bus-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmBusNo(); });
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+document.addEventListener('click', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
+function playBeep() {
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+}
+
+navigator.mediaDevices.getUserMedia({ video: true }).then(stream => video.srcObject = stream);
+
+function drawBoxes(results) { overlayCtx.clearRect(0, 0, overlay.width, overlay.height); }
+
+function updateStatus(results) {
+    if (!results.length) { statusBar.className = 'waiting'; statusBar.textContent = 'No face detected'; return; }
+    const known = results.filter(r => r.name !== 'Unknown');
+    const unknown = results.filter(r => r.name === 'Unknown');
+    if (known.length && !unknown.length)       { statusBar.className = 'success'; statusBar.textContent = 'Recognized'; }
+    else if (!known.length && unknown.length)  { statusBar.className = 'unknown'; statusBar.textContent = 'Unknown face'; }
+    else                                        { statusBar.className = 'mixed';   statusBar.textContent = 'Mixed detection'; }
+}
+
+function renderCards(results) {
+    const body = document.getElementById('recognition-body');
+    if (!results.length) { body.innerHTML = '<div class="rec-placeholder">👤<br>No student detected yet</div>'; return; }
+    const r = results.find(r => r.beep);
+    if (!r) return;
+    const confPct  = Math.round(r.confidence * 100);
+    const safeName = r.name.replace(/ /g, '_');
+    const photoUrl = `/api/photo/${encodeURIComponent(safeName)}_${encodeURIComponent(r.student_id)}`;
+    body.innerHTML = `
+        <div class="rec-photo-ring">
+            <img class="rec-photo" src="${photoUrl}" alt="${r.name}" onerror="this.outerHTML='<div class=rec-photo style=display:flex;align-items:center;justify-content:center;font-size:36px>👤</div>'">
+        </div>
+        <div class="rec-name">${r.name}</div>
+        <div style="font-size:12px;color:#64748b;font-weight:600;margin-top:-4px;">${r.student_id}</div>
+        <div class="rec-conf-wrap">
+            <div class="rec-conf-label"><span>Confidence</span><span>${confPct}%</span></div>
+            <div class="rec-conf-track"><div class="rec-conf-fill" style="width:${confPct}%"></div></div>
+        </div>
+        <div class="rec-status known">${r.status}</div>`;
+}
+
+function updateBoardingLog(results) {
+    results.forEach(r => {
+        if (r.name !== 'Unknown' && r.beep && !logEntries.some(e => e.name === r.name)) {
+            logEntries.unshift({ name: r.name, time: new Date().toLocaleTimeString(), bus: busNo });
+            if (logEntries.length > 6) logEntries.pop();
         }
+    });
+    boardingLog.innerHTML = logEntries.length
+        ? logEntries.map(e => `<div><b>${e.name}</b><div style="font-size:11px;color:gray;">${e.time} &bull; <span style="color:#b45309">Bus: ${e.bus}</span></div></div>`).join('')
+        : '<div class="empty-box">No boardings yet</div>';
+}
 
-        setInterval(updateMessage, 500);
-    </script>
-
+let busy = false;
+setInterval(() => {
+    if (busy || !video.videoWidth || !busNo || !scanning) return;
+    busy = true;
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    overlay.width = video.videoWidth; overlay.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(blob => {
+        const fd = new FormData();
+        fd.append('image', blob); fd.append('bus_no', busNo);
+        fetch('/api/recognize', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                const results = data.results || [];
+                drawBoxes(results); updateStatus(results); renderCards(results); updateBoardingLog(results);
+                if (results.some(r => r.beep)) playBeep();
+            })
+            .finally(() => busy = false);
+    });
+}, 1500);
+</script>
 </body>
 </html>

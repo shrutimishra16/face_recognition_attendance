@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Capture — Enroll Student</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Segoe UI', Inter, sans-serif; background: #f1f5f9; }
+
+        /* NAVBAR */
+        .navbar {
+            background: #0a2472; padding: 0 24px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 11px; }
+        .nav-logo {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 17px; color: #fff;
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.3);
+        }
+        .nav-brand-text .school { font-weight: 700; font-size: 14px; color: #fff; line-height: 1.2; }
+        .nav-brand-text .sub { font-size: 10px; color: #93c5fd; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav-links { display: flex; align-items: center; gap: 4px; }
+        .nav-links span {
+            color: #cbd5e1; font-size: 13px; font-weight: 500; padding: 6px 13px;
+            border-radius: 10px; cursor: pointer; white-space: nowrap;
+            display: flex; align-items: center; gap: 6px; transition: background 0.18s, color 0.18s;
+        }
+        .nav-links span:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .nav-links span.active { background: #f59e0b; color: #1a1a1a; font-weight: 700; }
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+        .hamburger span { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; }
+        .nav-links.open { display: flex !important; flex-direction: column; align-items: flex-start; position: absolute; top: 62px; left: 0; right: 0; background: #0a2472; padding: 12px 16px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 99; }
+        .nav-links.open span { width: 100%; padding: 10px 12px; font-size: 14px; }
+        @media (max-width: 640px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
+            .card { padding: 20px 16px; }
+            .step { padding: 10px 14px; font-size: 12px; }
+            .page-body { padding: 20px 12px 40px; }
+        }
+        /* STEP BAR */
+        .step-bar {
+            background: #fff; border-bottom: 1px solid #e2e8f0;
+            display: flex; justify-content: center; position: relative;
+        }
+        .step-bar::before {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+            height: 3px; background: #e2e8f0;
+        }
+        .step {
+            padding: 14px 32px; font-size: 13px; font-weight: 600; color: #94a3b8;
+            border-bottom: 3px solid transparent; position: relative; z-index: 1;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .step.done { color: #16a34a; }
+        .step.active { color: #0a2472; border-bottom: 3px solid #0a2472; font-weight: 700; }
+        .step-num {
+            width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0;
+            color: #64748b; font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .step.done .step-num { background: #16a34a; color: #fff; }
+        .step.active .step-num { background: #0a2472; color: #fff; }
+        .step.done.active { color: #16a34a; border-bottom: 3px solid #16a34a; }
+        .step.done.active .step-num { background: #16a34a; color: #fff; }
+
+        /* PAGE */
+        .page-body { display: flex; justify-content: center; padding: 32px 16px 48px; }
+
+        .card {
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+            padding: 28px 32px 28px; width: 100%; max-width: 560px;
+        }
+
+        .section-title {
+            font-size: 11px; font-weight: 700; color: #94a3b8;
+            letter-spacing: 0.13em; text-transform: uppercase; margin-bottom: 20px;
+        }
+
+        /* STUDENT INFO CHIP */
+        .student-chip {
+            display: flex; align-items: center; gap: 10px;
+            background: #f1f5f9; border-radius: 8px; padding: 10px 14px;
+            margin-bottom: 20px;
+        }
+        .student-chip .chip-icon { font-size: 20px; }
+        .student-chip .chip-name { font-size: 14px; font-weight: 700; color: #0a2472; }
+        .student-chip .chip-id { font-size: 12px; color: #64748b; }
+
+        /* CAMERA BOX */
+        .camera-wrap {
+            position: relative; width: 100%; aspect-ratio: 4/3;
+            background: #0a0a0a; border-radius: 10px; overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18); margin-bottom: 16px;
+        }
+        .camera-wrap video {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+
+        /* Vignette */
+        .camera-wrap::after {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse 55% 65% at 50% 50%, transparent 50%, rgba(0,0,0,0.55) 100%);
+            z-index: 2; pointer-events: none;
+        }
+
+        /* Oval guide */
+        .oval-guide {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 3; pointer-events: none;
+        }
+        .oval {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); border-radius: 50%; border-style: solid;
+        }
+        .oval-1 {
+            width: 160px; height: 200px; border-width: 2.5px;
+            border-color: rgba(251,191,36,0.95);
+            box-shadow: 0 0 16px rgba(251,191,36,0.45), inset 0 0 16px rgba(251,191,36,0.07);
+            animation: oval-pulse 2s ease-in-out infinite;
+        }
+        .oval-2 {
+            width: 190px; height: 236px; border-width: 1.5px;
+            border-color: rgba(251,191,36,0.5);
+            animation: oval-pulse 2s ease-in-out infinite 0.3s;
+        }
+        @keyframes oval-pulse { 0%,100%{opacity:0.7} 50%{opacity:1} }
+
+        /* Scan line */
+        .scan-line {
+            position: absolute; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #fbbf24, transparent);
+            z-index: 4; animation: scan-move 2.5s linear infinite; display: none;
+        }
+        @keyframes scan-move { 0%{top:10%} 100%{top:90%} }
+
+        /* Instruction overlay inside video */
+        .cam-hint {
+            position: absolute; bottom: 12px; left: 0; right: 0; z-index: 5;
+            text-align: center; font-size: 12px; font-weight: 600; color: #fff;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none;
+        }
+
+        /* Countdown ring overlay */
+        .countdown-overlay {
+            position: absolute; inset: 0; z-index: 6;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.35);
+        }
+        .countdown-overlay.show { display: flex; }
+        .countdown-num {
+            font-size: 72px; font-weight: 900; color: #fbbf24;
+            text-shadow: 0 0 24px rgba(251,191,36,0.8);
+            animation: pop 0.4s ease;
+        }
+        @keyframes pop { 0%{transform:scale(1.4)} 100%{transform:scale(1)} }
+
+        /* STATUS / INSTRUCTION BOX */
+        .instruction-box {
+            background: #fffbeb; border: 1px solid #fde68a; border-radius: 9px;
+            padding: 14px 18px; margin-bottom: 18px;
+            display: flex; align-items: flex-start; gap: 12px;
+        }
+        .instruction-box .ib-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+        .instruction-box .ib-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+        .instruction-box .ib-sub { font-size: 12px; color: #78716c; }
+
+        /* BUTTONS */
+        .btn-primary {
+            width: 100%; padding: 12px; background: #0a2472; color: #fff;
+            border: none; border-radius: 9px; font-size: 14px; font-weight: 700;
+            cursor: pointer; transition: background 0.18s; font-family: inherit; margin-bottom: 10px;
+        }
+        .btn-primary:hover:not(:disabled) { background: #0c1e5e; }
+        .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        .btn-secondary {
+            background: none; border: 1.5px solid #cbd5e1; color: #475569;
+            padding: 10px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: background 0.18s; font-family: inherit;
+        }
+        .btn-secondary:hover { background: #f1f5f9; }
+
+        /* SUCCESS STATE */
+        .success-overlay {
+            display: none; flex-direction: column; align-items: center;
+            justify-content: center; gap: 10px; padding: 24px 0 8px;
+        }
+        .success-overlay.show { display: flex; }
+        .success-icon { font-size: 52px; }
+        .success-title { font-size: 17px; font-weight: 700; color: #15803d; }
+        .success-sub { font-size: 13px; color: #64748b; text-align: center; }
+
+        @media (max-width: 600px) {
+            .card { padding: 20px 16px; }
+            .step { padding: 12px 16px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="nav-brand">
+        <div class="nav-logo">G</div>
+        <div class="nav-brand-text">
+            <div class="school">Gyanshree School</div>
+            <div class="sub">Smart Bus Attendance</div>
+        </div>
+    </div>
+    <div class="nav-links" id="nav-links">
+        <span onclick="window.location.href='/'">Home</span>
+        <span class="active">Enroll Student</span>
+        <span onclick="window.location.href='/bus-scan'">Bus Scan</span>
+        <span onclick="window.location.href='/records'">Records</span>
+    </div>
+    <div class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">
+        <span></span><span></span><span></span>
+    </div>
+</div>
+
+<!-- STEP BAR -->
+<div class="step-bar">
+    <div class="step done">
+        <span class="step-num">✓</span> Student Details
+    </div>
+    <div class="step active">
+        <span class="step-num">2</span> Face Capture
+    </div>
+    <div class="step">
+        <span class="step-num">3</span> Done
+    </div>
+</div>
+
+<!-- MAIN CARD -->
+<div class="page-body">
+    <div class="card">
+        <div class="section-title">Face Capture — Liveness Check</div>
+
+        <!-- Student info chip (populated by JS) -->
+        <div class="student-chip">
+            <span class="chip-icon">🎓</span>
+            <div>
+                <div class="chip-name" id="chip-name">—</div>
+                <div class="chip-id" id="chip-id">—</div>
+            </div>
+        </div>
+
+        <!-- Camera -->
+        <div class="camera-wrap" id="camera-wrap">
+            <video id="video" autoplay playsinline muted></video>
+            <div class="scan-line" id="scan-line"></div>
+            <div class="oval-guide">
+                <div class="oval oval-2"></div>
+                <div class="oval oval-1"></div>
+            </div>
+            <div class="cam-hint" id="cam-hint">Position student's face in the oval</div>
+            <div class="countdown-overlay" id="countdown-overlay">
+                <div class="countdown-num" id="countdown-num">3</div>
+            </div>
+        </div>
+
+        <!-- Instruction box -->
+        <div class="instruction-box" id="instruction-box">
+            <span class="ib-icon">👀</span>
+            <div>
+                <div class="ib-title" id="ib-title">Loading...</div>
+                <div class="ib-sub">Ask the student to follow this instruction</div>
+            </div>
+        </div>
+
+        <!-- Success state (hidden until done) -->
+        <div class="success-overlay" id="success-overlay">
+            <div class="success-icon">✅</div>
+            <div class="success-title">Enrollment Successful!</div>
+            <div class="success-sub" id="success-sub">Face captured and encoded successfully.</div>
+        </div>
+
+        <!-- Buttons -->
+        <div id="btn-area">
+            <button class="btn-primary" id="btn-start" onclick="startCapture()">Start Capture</button>
+            <button class="btn-secondary" onclick="goBack()">← Back</button>
+        </div>
+    </div>
+</div>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+// --- Parse query params ---
+const params = new URLSearchParams(window.location.search);
+const studentId  = params.get('student_id') || '';
+const fullName   = params.get('full_name')   || '';
+const classSection = params.get('class_section') || '';
+const parentEmail  = params.get('parent_email')  || '';
+
+document.getElementById('chip-name').textContent = fullName  || '—';
+document.getElementById('chip-id').textContent   = studentId + (classSection ? '  ·  ' + classSection : '');
+
+// --- Liveness instructions ---
+const INSTRUCTIONS = [
+    { icon: '👀', text: 'Look straight at the camera' },
+    { icon: '😊', text: 'Smile naturally' },
+    { icon: '↩️',  text: 'Slowly turn your head left' },
+    { icon: '↪️',  text: 'Slowly turn your head right' },
+    { icon: '📸', text: 'Hold still — capturing now!' },
+];
+
+let stream = null;
+let capturing = false;
+
+// Start camera on load
+window.addEventListener('load', async () => {
+    setInstruction(0);
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        document.getElementById('video').srcObject = stream;
+    } catch {
+        setInstructionCustom('⚠️', 'Camera access denied', 'Please allow camera permission and reload.');
+        document.getElementById('btn-start').disabled = true;
+    }
+});
+
+function setInstruction(idx) {
+    const ins = INSTRUCTIONS[idx];
+    document.getElementById('ib-icon') && (document.querySelector('.ib-icon').textContent = ins.icon);
+    document.querySelector('.ib-icon').textContent = ins.icon;
+    document.getElementById('ib-title').textContent = ins.text;
+}
+
+function setInstructionCustom(icon, title, sub) {
+    document.querySelector('.ib-icon').textContent = icon;
+    document.getElementById('ib-title').textContent = title;
+    document.querySelector('.ib-sub').textContent = sub;
+}
+
+function goBack() {
+    const backParams = new URLSearchParams({ student_id: studentId, full_name: fullName, class_section: classSection, parent_email: parentEmail });
+    window.location.href = '/enroll?' + backParams.toString();
+}
+
+async function startCapture() {
+    if (capturing) return;
+    capturing = true;
+
+    const btn = document.getElementById('btn-start');
+    btn.disabled = true;
+    document.getElementById('scan-line').style.display = 'block';
+
+    // Walk through liveness instructions
+    for (let i = 0; i < INSTRUCTIONS.length - 1; i++) {
+        setInstruction(i);
+        await sleep(1400);
+    }
+
+    // Final instruction + countdown
+    setInstruction(INSTRUCTIONS.length - 1);
+    await countdown(3);
+
+    // Capture frame
+    const video  = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    canvas.toBlob(async blob => {
+        const fd = new FormData();
+        fd.append('image', blob, 'capture.jpg');
+        fd.append('student_id',    studentId);
+        fd.append('full_name',     fullName);
+        fd.append('class_section', classSection);
+        fd.append('parent_email',  parentEmail);
+
+        try {
+            const res  = await fetch('/api/enroll', { method: 'POST', body: fd });
+            const data = await res.json();
+
+            if (data.success) {
+                showSuccess(data.message || 'Face captured and encoded successfully.');
+            } else {
+                showError(data.error || 'Enrollment failed. Please try again.');
+            }
+        } catch {
+            showError('Server error. Please try again.');
+        }
+    }, 'image/jpeg', 0.92);
+}
+
+function showSuccess(msg) {
+    stopCamera();
+
+    // Update step bar: step 2 → done, step 3 → done + active
+    const steps = document.querySelectorAll('.step');
+    steps[1].classList.remove('active');
+    steps[1].classList.add('done');
+    steps[1].querySelector('.step-num').textContent = '✓';
+    steps[2].classList.add('done', 'active');
+    steps[2].querySelector('.step-num').textContent = '✓';
+
+    document.querySelector('.section-title').textContent = 'Enrollment Complete';
+    document.getElementById('camera-wrap').style.display = 'none';
+    document.getElementById('instruction-box').style.display = 'none';
+    document.getElementById('success-sub').textContent = msg;
+    document.getElementById('success-overlay').classList.add('show');
+    document.getElementById('btn-area').innerHTML = `
+        <button class="btn-primary" onclick="window.location.href='/enroll'">Enroll Another Student</button>
+        <button class="btn-secondary" onclick="window.location.href='/bus-scan'">← Back to Bus Scan</button>
+    `;
+}
+
+function showError(msg) {
+    capturing = false;
+    document.getElementById('scan-line').style.display = 'none';
+    document.getElementById('btn-start').disabled = false;
+    setInstructionCustom('❌', msg, 'Please try again.');
+}
+
+function stopCamera() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+}
+
+async function countdown(from) {
+    const overlay = document.getElementById('countdown-overlay');
+    const num     = document.getElementById('countdown-num');
+    overlay.classList.add('show');
+    for (let i = from; i >= 1; i--) {
+        num.textContent = i;
+        num.style.animation = 'none';
+        num.offsetHeight; // reflow to restart animation
+        num.style.animation = '';
+        await sleep(900);
+    }
+    overlay.classList.remove('show');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+
+</body>
+</html>

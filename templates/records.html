@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Records</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Segoe UI', Inter, sans-serif; background: #f1f5f9; }
+
+        /* NAVBAR */
+        .navbar {
+            background: #0a2472; padding: 0 24px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 11px; }
+        .nav-logo {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 17px; color: #fff;
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.3);
+        }
+        .nav-brand-text .school { font-weight: 700; font-size: 14px; color: #fff; line-height: 1.2; }
+        .nav-brand-text .sub { font-size: 10px; color: #93c5fd; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav-links { display: flex; align-items: center; gap: 4px; }
+        .nav-links span {
+            color: #cbd5e1; font-size: 13px; font-weight: 500; padding: 6px 13px;
+            border-radius: 10px; cursor: pointer; white-space: nowrap;
+            transition: background 0.18s, color 0.18s;
+        }
+        .nav-links span:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .nav-links span.active { background: #f59e0b; color: #1a1a1a; font-weight: 700; }
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+        .hamburger span { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; }
+        .nav-links.open { display: flex !important; flex-direction: column; align-items: flex-start; position: absolute; top: 62px; left: 0; right: 0; background: #0a2472; padding: 12px 16px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 99; }
+        .nav-links.open span { width: 100%; padding: 10px 12px; font-size: 14px; }
+        @media (max-width: 640px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
+            .kpi-num { font-size: 30px; }
+            .page { padding: 16px 12px 40px; }
+            .controls { flex-direction: column; align-items: flex-start; }
+            .controls-right { margin-left: 0; width: 100%; }
+            .btn-ctrl { width: 100%; justify-content: center; }
+        }
+
+        /* PAGE */
+        .page { max-width: 1000px; margin: 0 auto; padding: 28px 16px 48px; }
+
+        /* KPI CARDS */
+        .kpi-row { display: flex; gap: 16px; margin-bottom: 24px; }
+        .kpi-card {
+            flex: 1; background: #fff; border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            padding: 24px 20px; text-align: center;
+        }
+        .kpi-num { font-size: 42px; font-weight: 800; color: #0a2472; line-height: 1; }
+        .kpi-label { font-size: 13px; color: #64748b; margin-top: 6px; font-weight: 500; }
+
+        /* TABLE CARD */
+        .table-card {
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07); overflow: hidden;
+        }
+
+        /* CONTROLS */
+        .controls {
+            display: flex; align-items: center; gap: 10px;
+            padding: 16px 20px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap;
+        }
+        .date-wrap { position: relative; display: flex; align-items: center; }
+        .date-wrap input[type=date] {
+            padding: 8px 36px 8px 12px; border: 1.5px solid #cbd5e1;
+            border-radius: 8px; font-size: 13px; font-family: inherit;
+            color: #1e293b; outline: none; cursor: pointer;
+            transition: border-color 0.18s;
+        }
+        .date-wrap input[type=date]::-webkit-calendar-picker-indicator { opacity: 0; position: absolute; right: 0; width: 100%; cursor: pointer; }
+        .date-wrap .cal-icon {
+            position: absolute; right: 10px; pointer-events: none;
+            font-size: 15px; color: #94a3b8;
+        }
+        .btn-ctrl {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 8px; font-size: 13px;
+            font-weight: 600; cursor: pointer; font-family: inherit;
+            border: 1.5px solid #cbd5e1; background: #fff; color: #475569;
+            transition: background 0.18s;
+        }
+        .btn-ctrl:hover { background: #f1f5f9; }
+        .controls-right { margin-left: auto; display: flex; gap: 10px; }
+
+        /* TABLE */
+        .tbl-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            text-align: left; font-size: 11px; font-weight: 700;
+            color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em;
+            padding: 12px 16px; border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: #f8fafc; }
+        tbody td { padding: 12px 16px; font-size: 13px; color: #1e293b; vertical-align: middle; }
+
+        .td-id-top { font-weight: 700; color: #0a2472; font-size: 13px; }
+        .td-id-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+        .td-name { font-weight: 600; }
+
+        .bus-badge {
+            display: inline-block; padding: 3px 10px;
+            background: #fef3c7; color: #b45309;
+            border-radius: 20px; font-size: 12px; font-weight: 700;
+        }
+
+        .empty-row td {
+            text-align: center; padding: 40px; color: #94a3b8; font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .kpi-num { font-size: 32px; }
+            .controls { gap: 8px; }
+            .controls-right { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="nav-brand">
+        <div class="nav-logo">G</div>
+        <div class="nav-brand-text">
+            <div class="school">Gyanshree School</div>
+            <div class="sub">Smart Bus Attendance</div>
+        </div>
+    </div>
+    <div class="nav-links" id="nav-links">
+        <span onclick="window.location.href='/'">Home</span>
+        <span onclick="window.location.href='/enroll'">Enroll Student</span>
+        <span onclick="window.location.href='/bus-scan'">Bus Scan</span>
+        <span class="active">Records</span>
+    </div>
+    <div class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">
+        <span></span><span></span><span></span>
+    </div>
+</div>
+
+<div class="page">
+
+    <!-- KPI -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-num" id="kpi-boarded">—</div>
+            <div class="kpi-label">Boarded Today</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-num" id="kpi-rate">—</div>
+            <div class="kpi-label">Attendance Rate</div>
+        </div>
+    </div>
+
+    <!-- TABLE CARD -->
+    <div class="table-card">
+        <div class="controls">
+            <div class="date-wrap">
+                <input type="date" id="date-picker">
+                <span class="cal-icon">📅</span>
+            </div>
+            <div class="controls-right">
+                <button class="btn-ctrl" onclick="loadRecords()">🔄 Refresh</button>
+                <button class="btn-ctrl" onclick="exportCSV()">⬇️ Export CSV</button>
+            </div>
+        </div>
+
+        <div class="tbl-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>Boarded At</th>
+                        <th>Bus No.</th>
+                    </tr>
+                </thead>
+                <tbody id="tbl-body">
+                    <tr class="empty-row"><td colspan="5">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let currentRecords = [];
+
+// Set date picker to today
+const today = new Date();
+const pad = n => String(n).padStart(2, '0');
+const todayStr = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+document.getElementById('date-picker').value = todayStr;
+document.getElementById('date-picker').addEventListener('change', loadRecords);
+
+async function loadRecords() {
+    const date = document.getElementById('date-picker').value;
+    document.getElementById('tbl-body').innerHTML = '<tr class="empty-row"><td colspan="5">Loading...</td></tr>';
+
+    try {
+        const res  = await fetch(`/api/records?date=${date}`);
+        const data = await res.json();
+
+        if (data.error) {
+            document.getElementById('tbl-body').innerHTML = `<tr class="empty-row"><td colspan="5">Error: ${data.error}</td></tr>`;
+            return;
+        }
+
+        currentRecords = data.records;
+        document.getElementById('kpi-boarded').textContent = data.boarded;
+        document.getElementById('kpi-rate').textContent    = data.rate + '%';
+        renderTable(data.records);
+    } catch {
+        document.getElementById('tbl-body').innerHTML = '<tr class="empty-row"><td colspan="5">Failed to load records.</td></tr>';
+    }
+}
+
+function renderTable(records) {
+    const tbody = document.getElementById('tbl-body');
+    if (!records.length) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No records found for this date.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = records.map(r => `
+        <tr>
+            <td>
+                <div class="td-id-top">${r.name}</div>
+                <div class="td-id-sub">${r.student_id || '—'}</div>
+            </td>
+            <td class="td-name">${r.name}</td>
+            <td>${r.class || '—'}</td>
+            <td>${r.time}</td>
+            <td><span class="bus-badge">${r.bus_no || '—'}</span></td>
+        </tr>
+    `).join('');
+}
+
+function exportCSV() {
+    if (!currentRecords.length) return;
+    const header = ['Student ID', 'Name', 'Class', 'Boarded At', 'Bus No'];
+    const rows   = currentRecords.map(r => [r.student_id, r.name, r.class, r.time, r.bus_no]);
+    const csv    = [header, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob   = new Blob([csv], { type: 'text/csv' });
+    const a      = document.createElement('a');
+    a.href       = URL.createObjectURL(blob);
+    a.download   = `attendance_${document.getElementById('date-picker').value}.csv`;
+    a.click();
+}
+
+loadRecords();
+</script>
+
+</body>
+</html>

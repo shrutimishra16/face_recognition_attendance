@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enroll Student</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Inter, sans-serif;
+            background: #f1f5f9;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: #0a2472;
+            padding: 0 24px;
+            height: 62px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 11px; }
+        .nav-logo {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 17px; color: #fff;
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.3);
+        }
+        .nav-brand-text .school { font-weight: 700; font-size: 14px; color: #fff; line-height: 1.2; }
+        .nav-brand-text .sub { font-size: 10px; color: #93c5fd; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav-links { display: flex; align-items: center; gap: 4px; }
+        .nav-links span {
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 13px;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex; align-items: center; gap: 6px;
+            transition: background 0.18s, color 0.18s;
+        }
+        .nav-links span:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .nav-links span.active { background: #f59e0b; color: #1a1a1a; font-weight: 700; }
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+        .hamburger span { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; }
+        .nav-links.open { display: flex !important; flex-direction: column; align-items: flex-start; position: absolute; top: 62px; left: 0; right: 0; background: #0a2472; padding: 12px 16px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 99; }
+        .nav-links.open span { width: 100%; padding: 10px 12px; font-size: 14px; }
+        @media (max-width: 640px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
+            .card { padding: 20px 16px; }
+            .step { padding: 10px 14px; font-size: 12px; }
+            .page-body { padding: 20px 12px; }
+        }
+        /* STEP PROGRESS */
+        .step-bar {
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: center;
+            gap: 0;
+        }
+        .step {
+            padding: 14px 32px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            border-bottom: 3px solid transparent;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .step.active {
+            color: #0a2472;
+            border-bottom: 3px solid #0a2472;
+        }
+        .step-num {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .step.active .step-num {
+            background: #0a2472;
+            color: #fff;
+        }
+
+        /* PAGE BODY */
+        .page-body {
+            display: flex;
+            justify-content: center;
+            padding: 36px 16px;
+        }
+
+        /* CARD */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 32px 36px 28px;
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+        .form-group label .req { color: #ef4444; margin-left: 2px; }
+        .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 9px;
+            font-size: 14px;
+            color: #1e293b;
+            outline: none;
+            transition: border-color 0.18s;
+            font-family: inherit;
+        }
+        .form-group input::placeholder { color: #b0bec5; }
+        .form-group input:focus { border-color: #0a2472; }
+
+        .btn-continue {
+            margin-top: 8px;
+            padding: 11px 26px;
+            background: #0a2472;
+            color: #fff;
+            border: none;
+            border-radius: 9px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.18s;
+            font-family: inherit;
+        }
+        .btn-continue:hover { background: #0c1e5e; }
+
+        @media (max-width: 600px) {
+            .card { padding: 24px 18px 20px; }
+            .step { padding: 12px 18px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="nav-brand">
+        <div class="nav-logo">G</div>
+        <div class="nav-brand-text">
+            <div class="school">Gyanshree School</div>
+            <div class="sub">Smart Bus Attendance</div>
+        </div>
+    </div>
+    <div class="nav-links" id="nav-links">
+        <span onclick="window.location.href='/'">Home</span>
+        <span class="active">Enroll Student</span>
+        <span onclick="window.location.href='/bus-scan'">Bus Scan</span>
+        <span onclick="window.location.href='/records'">Records</span>
+    </div>
+    <div class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">
+        <span></span><span></span><span></span>
+    </div>
+</div>
+
+<!-- STEP PROGRESS -->
+<div class="step-bar">
+    <div class="step active">
+        <span class="step-num">1</span> Student Details
+    </div>
+    <div class="step">
+        <span class="step-num">2</span> Face Capture
+    </div>
+    <div class="step">
+        <span class="step-num">3</span> Done
+    </div>
+</div>
+
+<!-- FORM -->
+<div class="page-body">
+    <div class="card">
+        <div class="section-title">Student Information</div>
+        <form id="enroll-form" onsubmit="goToCapture(event)">
+            <div class="form-group">
+                <label>Student ID / Roll No.<span class="req">*</span></label>
+                <input type="text" name="student_id" placeholder="e.g. GS2024001" required>
+            </div>
+            <div class="form-group">
+                <label>Student Full Name<span class="req">*</span></label>
+                <input type="text" name="full_name" placeholder="e.g. Aryan Sharma" required>
+            </div>
+            <div class="form-group">
+                <label>Class / Section</label>
+                <input type="text" name="class_section" placeholder="e.g. 8-A or Grade 3">
+            </div>
+            <div class="form-group">
+                <label>Parent Email</label>
+                <input type="email" name="parent_email" placeholder="parent@email.com">
+            </div>
+            <button type="submit" class="btn-continue">Continue to Camera →</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Pre-fill form if returning from step 2
+window.addEventListener('load', () => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('student_id')) document.querySelector('[name=student_id]').value = p.get('student_id');
+    if (p.get('full_name'))   document.querySelector('[name=full_name]').value   = p.get('full_name');
+    if (p.get('class_section')) document.querySelector('[name=class_section]').value = p.get('class_section');
+    if (p.get('parent_email'))  document.querySelector('[name=parent_email]').value  = p.get('parent_email');
+});
+
+function goToCapture(e) {
+    e.preventDefault();
+    const form = document.getElementById('enroll-form');
+    const data = new FormData(form);
+    const params = new URLSearchParams({
+        student_id:    data.get('student_id'),
+        full_name:     data.get('full_name'),
+        class_section: data.get('class_section') || '',
+        parent_email:  data.get('parent_email')  || ''
+    });
+    window.location.href = '/enroll/capture?' + params.toString();
+}
+</script>
+
+</body>
+</html>
