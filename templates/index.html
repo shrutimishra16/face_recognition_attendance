@@ -106,6 +106,20 @@
         .oval-cross-v { width: 1px; height: 60px; transform: translate(-50%,-50%); }
         .scan-status { text-align: center; padding: 8px; background: #0a2472; color: #fbbf24; font-size: 14px; }
 
+        /* FLIP CAMERA BUTTON */
+        .btn-flip-cam {
+            display: none;
+            position: absolute; bottom: 12px; right: 12px; z-index: 10;
+            background: rgba(0,0,0,0.5); border: 1.5px solid rgba(255,255,255,0.3);
+            color: #fff; border-radius: 50%; width: 40px; height: 40px;
+            font-size: 18px; cursor: pointer; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); transition: background 0.2s;
+        }
+        .btn-flip-cam:active { background: rgba(245,158,11,0.7); }
+        @media (max-width: 640px) {
+            .btn-flip-cam { display: flex; }
+        }
+
         /* SCAN BUTTON */
         .scan-controls { display: flex; align-items: center; justify-content: center; padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
         .btn-scan-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 28px; border: none; border-radius: 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.1s; letter-spacing: 0.04em; }
@@ -228,6 +242,7 @@
                 </div>
                 <video id="video" autoplay playsinline></video>
                 <canvas id="overlay"></canvas>
+                <button class="btn-flip-cam" id="btn-flip" onclick="flipCamera()" title="Flip Camera">🔄</button>
             </div>
             <div class="scan-status" id="scan-status-bar">Scan Active</div>
             <div class="scan-controls">
@@ -314,7 +329,27 @@ function playBeep() {
     osc.start(); osc.stop(audioCtx.currentTime + 0.3);
 }
 
-navigator.mediaDevices.getUserMedia({ video: true }).then(stream => video.srcObject = stream);
+let currentStream = null;
+let facingMode = 'user';
+
+async function startCamera(facing) {
+    if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+    try {
+        currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } });
+        video.srcObject = currentStream;
+    } catch {
+        // fallback: try without facingMode constraint
+        currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = currentStream;
+    }
+}
+
+function flipCamera() {
+    facingMode = facingMode === 'user' ? 'environment' : 'user';
+    startCamera(facingMode);
+}
+
+startCamera(facingMode);
 
 function drawBoxes(results) { overlayCtx.clearRect(0, 0, overlay.width, overlay.height); }
 
